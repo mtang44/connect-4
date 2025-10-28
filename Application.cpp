@@ -3,8 +3,10 @@
 #include "classes/TicTacToe.h"
 #include "classes/Checkers.h"
 #include "classes/Othello.h"
+#include "classes/ConnectFour.h"
 #include <string>
 #include "Logger.h"
+
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -72,17 +74,19 @@ namespace ClassGame {
                         game = new Othello();
                         game->setUpBoard();
                     }
+                    if(ImGui::Button("Start Connect Four"))
+                    {
+                        game = new ConnectFour();
+                        game->setUpBoard();
+                    }
                 } else {
-                    cout << " game = true" << endl;
                     ImGui::Text("Current Player Number: %d", game->getCurrentPlayer()->playerNumber());
                     ImGui::Text("Current Board State: %s", game->stateString().c_str());
                 } 
-                cout << " testing playerTypeSelected" << endl;
                 //test 
             
                 // if(game->_gameOptions.playerTypeSelected == false)
                 // {
-                    cout << " creating ai button" << endl;
                     if(ImGui::Button("Play AI"))
                         {
                             game->_gameOptions.playerVSAI = true;
@@ -91,7 +95,6 @@ namespace ClassGame {
                             game->setUpBoard(); // recreates board with AI player active
                             Logger::GetInstance().LogGameEvent("Ai Player Enabled");
                         }
-                        cout << " creating coop button" << endl;
                         if(ImGui::Button("Play COOP"))
                         {
                             game->_gameOptions.playerVSAI = false;
@@ -101,31 +104,30 @@ namespace ClassGame {
                             Logger::GetInstance().LogGameEvent("Player 2 Enabled");
                         }
                 //}
-                cout << "playerTypeselected test complete" << endl;
+                // cout << "playerTypeselected test complete" << endl;
                 ImGui::End();
-                cout << "settings window closed" << endl;
 
                 ImGui::Begin("GameWindow");
-                cout << "game window created" << endl;
                 // test
-                // game->drawFrame();
+                 //game->drawFrame();
                 //  if(!game->_gameOptions.playerTypeSelected){
                 
                 //     ImGui::Text("Please select Player vs Player or Player vs AI to begin");
                 
 	            // }
                 ImGui::End();
-                cout << "game window closed" << endl;
+               
 
                 if (game) {
-                    if (game->gameHasAI() && (game->getCurrentPlayer()->isAIPlayer() || game->_gameOptions.AIvsAI))
+                    if (game->gameHasAI() && (game->getCurrentPlayer()->isAIPlayer() && game->_gameOptions.playerVSAI || game->_gameOptions.AIvsAI))
                     {
-                        game->updateAI();
+                        Logger::GetInstance().LogGameEvent("AI is making a move");
+                         game->updateAI();
                     }
                     game->drawFrame();
                 }
                  ImGui::Begin("Log Window");
-                cout << "Log window created" << endl;
+               
                 showLogWindow(&LogWindowVisible);
                 for(LogStuff s: Logger::GetInstance().log)
                 {
@@ -147,7 +149,7 @@ namespace ClassGame {
                     }
                 }
                 ImGui::End();
-                cout << "Log window closed " << endl;
+                
         }
 
         //
