@@ -61,8 +61,8 @@ bool ConnectFour::actionForEmptyHolder(BitHolder &holder)
 
         ChessSquare *s = _grid->getSquare(x,0);
         int targetY = findLowestEmpty(y);
-        ImVec2 pos = s->getPosition();
-        bit->setPosition(pos); 
+         ImVec2 pos = s->getPosition();
+         bit->setPosition(pos); 
         ChessSquare *targetSquare = _grid->getSquare(x,targetY);
         targetSquare->setBit(bit);
         pos = targetSquare->getPosition();
@@ -168,7 +168,7 @@ std::string ConnectFour::stateString()
     _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
         Bit *bit = square->bit();
         if (bit) {
-            s[y * 3 + x] = to_string(bit->getOwner()->playerNumber()+1)[0];
+            s[y * 7 + x] = to_string(bit->getOwner()->playerNumber()+1)[0];
         }
     });
     return s;
