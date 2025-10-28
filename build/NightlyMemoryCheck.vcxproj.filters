@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\mcst2\OneDrive\Documents\Desktop\cmpm123_test\Assignment 4 Connect 4\connect-4\build\CMakeFiles\f24afe807efd919ff25e7aab7aea4f0b\NightlyMemoryCheck.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\mcst2\OneDrive\Documents\Desktop\cmpm123_test\Assignment 4 Connect 4\connect-4\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\mcst2\OneDrive\Documents\Desktop\cmpm123_test\Assignment 4 Connect 4\connect-4\build\CMakeFiles\NightlyMemoryCheck" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{3C044FF7-73EB-3752-94BF-8BBC2350B803}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
