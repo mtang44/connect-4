@@ -7,6 +7,7 @@
 Game::Game()
 {
 	_gameOptions.AIPlayer = false;
+	_gameOptions.playerVSAI = false;
 	_gameOptions.AIPlaying = false;
 	_gameOptions.currentTurnNo = 0;
 	_gameOptions.gameNumber = -1;
@@ -16,6 +17,7 @@ Game::Game()
 	_gameOptions.score = 0;
 	_gameOptions.AIDepthSearches = 0;
 	_gameOptions.AIvsAI = false;
+	_gameOptions.playerTypeSelected = false;
 
 	_table = nullptr;
 	_winner = nullptr;

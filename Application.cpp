@@ -3,11 +3,18 @@
 #include "classes/TicTacToe.h"
 #include "classes/Checkers.h"
 #include "classes/Othello.h"
+#include <string>
+#include "Logger.h"
+#include <iostream>
+#include <fstream>
+#include <filesystem>
 
 namespace ClassGame {
         //
         // our global variables
         //
+        bool LogWindowVisible = false;
+        void showLogWindow(bool* p_open);
         Game *game = nullptr;
         bool gameOver = false;
         int gameWinner = -1;
@@ -18,7 +25,14 @@ namespace ClassGame {
         //
         void GameStartUp() 
         {
+            cout << "game startup() began " << endl;
+            Logger& logger = Logger::GetInstance();
+            logger.LogInfo("Game started successfully");
+
+            logger.LogGameEvent("Application initialized");
             game = nullptr;
+            // testing;
+            // game->setUpBoard();
         }
 
         //
@@ -32,7 +46,8 @@ namespace ClassGame {
                 //ImGui::ShowDemoWindow();
 
                 ImGui::Begin("Settings");
-
+                cout << "settings window created" << endl;
+                cout << "testing gameOver " << endl;
                 if (gameOver) {
                     ImGui::Text("Game Over!");
                     ImGui::Text("Winner: %d", gameWinner);
@@ -43,6 +58,7 @@ namespace ClassGame {
                         gameWinner = -1;
                     }
                 }
+                cout << "testing !game " << endl;
                 if (!game) {
                     if (ImGui::Button("Start Tic-Tac-Toe")) {
                         game = new TicTacToe();
@@ -57,12 +73,50 @@ namespace ClassGame {
                         game->setUpBoard();
                     }
                 } else {
+                    cout << " game = true" << endl;
                     ImGui::Text("Current Player Number: %d", game->getCurrentPlayer()->playerNumber());
                     ImGui::Text("Current Board State: %s", game->stateString().c_str());
-                }
+                } 
+                cout << " testing playerTypeSelected" << endl;
+                //test 
+            
+                // if(game->_gameOptions.playerTypeSelected == false)
+                // {
+                    cout << " creating ai button" << endl;
+                    if(ImGui::Button("Play AI"))
+                        {
+                            game->_gameOptions.playerVSAI = true;
+                            game->_gameOptions.playerTypeSelected = true;
+                            
+                            game->setUpBoard(); // recreates board with AI player active
+                            Logger::GetInstance().LogGameEvent("Ai Player Enabled");
+                        }
+                        cout << " creating coop button" << endl;
+                        if(ImGui::Button("Play COOP"))
+                        {
+                            game->_gameOptions.playerVSAI = false;
+                            //game->setAIPlayer(false);
+                            game->_gameOptions.playerTypeSelected = true;
+                            game->setUpBoard(); // recreates board with 2nd player active
+                            Logger::GetInstance().LogGameEvent("Player 2 Enabled");
+                        }
+                //}
+                cout << "playerTypeselected test complete" << endl;
                 ImGui::End();
+                cout << "settings window closed" << endl;
 
                 ImGui::Begin("GameWindow");
+                cout << "game window created" << endl;
+                // test
+                // game->drawFrame();
+                //  if(!game->_gameOptions.playerTypeSelected){
+                
+                //     ImGui::Text("Please select Player vs Player or Player vs AI to begin");
+                
+	            // }
+                ImGui::End();
+                cout << "game window closed" << endl;
+
                 if (game) {
                     if (game->gameHasAI() && (game->getCurrentPlayer()->isAIPlayer() || game->_gameOptions.AIvsAI))
                     {
@@ -70,7 +124,30 @@ namespace ClassGame {
                     }
                     game->drawFrame();
                 }
+                 ImGui::Begin("Log Window");
+                cout << "Log window created" << endl;
+                showLogWindow(&LogWindowVisible);
+                for(LogStuff s: Logger::GetInstance().log)
+                {
+                    if(s.level == LogStuff::ERROR)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                        ImGui::Text("%s: %s", s.timeStamp.c_str(), s.loggingMessage.c_str());
+                        ImGui::PopStyleColor();
+                    }
+                    else if(s.level == LogStuff::WARNING)
+                    {
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
+                        ImGui::Text("%s: %s", s.timeStamp.c_str(), s.loggingMessage.c_str());
+                        ImGui::PopStyleColor();
+                    }
+                    else {
+                        ImGui::Text("%s: %s", s.timeStamp.c_str(), s.loggingMessage.c_str());
+                    }
+                }
                 ImGui::End();
+                cout << "Log window closed " << endl;
         }
 
         //
@@ -89,5 +166,71 @@ namespace ClassGame {
                 gameOver = true;
                 gameWinner = -1;
             }
+        }
+         void showLogWindow(bool* p_open)
+        {
+           
+            const bool output_to_file = ImGui::Button("Output to File"); ImGui::SameLine();
+            const bool clear_btn = ImGui::Button("clear"); ImGui::SameLine();
+            const bool test_info_btn = ImGui::Button("Test Info"); ImGui::SameLine();
+            const bool test_warning_btn = ImGui::Button("Test Warning"); ImGui::SameLine();
+            const bool test_error_btn = ImGui::Button("Test Error");
+              if(output_to_file)
+            {
+               Logger::GetInstance().LogInfo("Outputting to log file");
+               ofstream logFile("game_log.txt",ios::out);
+               if(logFile.is_open())
+               {
+                 Logger::GetInstance().LogInfo("Adding log messages to log");;
+                   for(LogStuff s: Logger::GetInstance().log)
+                   {
+                       logFile << s.timeStamp << " " << s.loggingMessage << endl;
+                   }
+                   logFile.close();
+                   std::cout << "file located at : " << std::filesystem::current_path() << '\n';
+                   Logger::GetInstance().LogInfo("Log file created: game_log.txt");
+
+                   
+               }
+               else
+               {
+                    Logger::GetInstance().LogInfo("File failed to open");
+               }
+            }
+            if(clear_btn)
+            {
+               Logger::GetInstance().log.clear();
+            }
+            if(test_info_btn)
+            {
+                Logger::GetInstance().LogInfo("This is a test Info message.");
+            }
+            if(test_warning_btn)
+            {
+                Logger::GetInstance().LogWarning("This is a test Warning message.");
+
+            }
+            if(test_error_btn)
+            {
+                Logger::GetInstance().LogError("This is a test Error message.");
+            }
+        }   
+        void ToggleLogWindow()
+        {
+            if(!IsLogWindowVisible() )
+            {
+                cout << "Log window was false setting to visible" << endl;
+                LogWindowVisible = true;
+                  cout << "Log window set to visible" << endl;
+                 showLogWindow(&LogWindowVisible);
+            }
+            else
+            {
+                LogWindowVisible = false;
+            }
+        }
+        bool IsLogWindowVisible()
+        {
+            return LogWindowVisible;
         }
 }

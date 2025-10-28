@@ -49,6 +49,9 @@
     <ClCompile Include="C:\Users\mcst2\OneDrive\Documents\Desktop\cmpm123_test\Assignment 4 Connect 4\connect-4\classes\Othello.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\mcst2\OneDrive\Documents\Desktop\cmpm123_test\Assignment 4 Connect 4\connect-4\Logger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\mcst2\OneDrive\Documents\Desktop\cmpm123_test\Assignment 4 Connect 4\connect-4\imgui\imgui_impl_dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
