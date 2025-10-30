@@ -30,12 +30,20 @@ public:
 	void        updateAI() override;
     bool        gameHasAI() override { return true; }
     int         findLowestEmpty(int column);
-    Grid* getGrid() override { return _grid; }
+    Grid*       getGrid() override { return _grid; }
 private:
     Bit *       PieceForPlayer(const int playerNumber);
     Player*     ownerAt(int x, int y) const;
     int         negamax(std::string& state, int depth, int playerColor);
 
     Grid*       _grid;
+    struct {
+        int column;
+        int row;
+        int pos;
+    }_lastMove;
+    enum Direction { RIGHT, LEFT, UP, DOWN, UP_RIGHT, DOWN_LEFT, UP_LEFT, DOWN_RIGHT };
+    int         checkFourInDirection(int startColumn, int startRow, Direction direction); // added for winner check
+    
 };
 

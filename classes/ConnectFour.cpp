@@ -60,15 +60,19 @@ bool ConnectFour::actionForEmptyHolder(BitHolder &holder)
     if (bit) {
 
         ChessSquare *s = _grid->getSquare(x,0);
-        int targetY = findLowestEmpty(y);
+        int targetY = findLowestEmpty(x);
          ImVec2 pos = s->getPosition();
          bit->setPosition(pos); 
+         s->setBit(bit);
         ChessSquare *targetSquare = _grid->getSquare(x,targetY);
+        //Logger::GetInstance().LogGameEvent("Lowest Y position found at " + to_string(targetY));
         targetSquare->setBit(bit);
         pos = targetSquare->getPosition();
         bit->moveTo(pos);
-        //bit->setPosition(holder.getPosition());
-        endTurn();
+        _lastMove.column = x;
+        _lastMove.row = targetY;
+        //Logger::GetInstance().LogGameEvent("Last placed piece at column " + to_string(_lastMove.column) + " Row: " + to_string(_lastMove.row));
+;       endTurn();
 
         return true;
     }   
@@ -77,7 +81,7 @@ bool ConnectFour::actionForEmptyHolder(BitHolder &holder)
 int ConnectFour::findLowestEmpty(int column)
 {
     for (int row = 5; row >= 0; --row) {
-        if (ownerAt(row, column) == nullptr) {
+        if (ownerAt(column, row) == nullptr) {
             Logger::GetInstance().LogGameEvent("Lowest Empty = column " + std::to_string(column)+"in row " + to_string(row));
             return row;
         }
@@ -110,32 +114,133 @@ void ConnectFour::stopGame()
 //
 // helper function for the winner check
 //
-Player* ConnectFour::ownerAt(int x, int y) const
+Player* ConnectFour::ownerAt(int col, int row) const
 {
-    if (x < 0 || x >= _gameOptions.rowY || y < 0 || y >= _gameOptions.rowX) {
+    Logger::GetInstance().LogGameEvent("testing x position " + to_string(row) +" with y" + to_string(col));
+    if (row < 0 || row >= _gameOptions.rowY || col < 0 || col >= _gameOptions.rowX) {
         return nullptr;
     }
 
-    auto square = _grid->getSquare(x, y);
+    auto square = _grid->getSquare(col, row);
+    Logger::GetInstance().LogGameEvent("Checking owner at position: (" + std::to_string(row) + ", " + std::to_string(col) + ")");
+    Logger::GetInstance().LogGameEvent("Square bit presence: " + std::string(square && square->bit() ? "Yes" : "No"));
     if (!square || !square->bit()) {
         return nullptr;
     }
     return square->bit()->getOwner();
 
 }
-
+// Checks for a winner after the last move was made. 
 Player* ConnectFour::checkForWinner()
 {
-    // static const int kWinningTriples[8][3] =  { {0,1,2}, {3,4,5}, {6,7,8},  // rows
-    //                                             {0,3,6}, {1,4,7}, {2,5,8},  // cols
-    //                                             {0,4,8}, {2,4,6} };         // diagonals
-    // for( int i=0; i<8; i++ ) {
-    //     const int *triple = kWinningTriples[i];
-    //     Player *player = ownerAt(triple[0]);
-    //     if( player && player == ownerAt(triple[1]) && player == ownerAt(triple[2]) )
-    //         return player;
-    // }
+    int horizontalScore = 0; 
+    int verticleScore = 0;
+    int diagonalRightScore = 0;
+    int diagonalLeftScore = 0;
+    // check recursive right + recursive left
+    
+
+    horizontalScore = checkFourInDirection(_lastMove.column, _lastMove.row, RIGHT) + checkFourInDirection(_lastMove.column, _lastMove.row, LEFT) +1; 
+
+    // check recursive up + recursive down
+    verticleScore = checkFourInDirection(_lastMove.column, _lastMove.row, UP) + checkFourInDirection(_lastMove.column, _lastMove.row, DOWN) +1;
+    // check recursive diagonal up-right + down left
+    diagonalRightScore = checkFourInDirection(_lastMove.column, _lastMove.row, UP_RIGHT) + checkFourInDirection(_lastMove.column, _lastMove.row, DOWN_LEFT) +1;
+   // check recursive diagonal up-left + down right
+    diagonalLeftScore = checkFourInDirection(_lastMove.column, _lastMove.row, UP_LEFT) + checkFourInDirection(_lastMove.column, _lastMove.row, DOWN_RIGHT) +1;
+
+    if(horizontalScore >= 4 || verticleScore >= 4|| diagonalRightScore >= 4 || diagonalLeftScore >= 4)
+    {
+        return ownerAt(_lastMove.column, _lastMove.row);
+    }
+    
     return nullptr;
+}
+// Recursive function that checks in a given direction for consecutive pieces. 
+// 
+int ConnectFour::checkFourInDirection(int startColumn, int startRow, Direction direction)
+{
+    int counter = 0; 
+    Player* startOwner = ownerAt(startColumn, startRow);
+    switch(direction){
+        case RIGHT:
+            if(startColumn +1 < _gameOptions.rowX )
+            {
+                if(ownerAt(startColumn +1, startRow) == startOwner)
+                {
+                    counter = 1 + checkFourInDirection(startColumn +1, startRow, RIGHT);
+                }
+            }
+            break;
+        case LEFT:
+             if(startColumn -1 >= 0)
+            {
+                if(ownerAt(startColumn -1, startRow) == startOwner)
+                {
+                    counter = 1 + checkFourInDirection(startColumn -1, startRow, LEFT);
+                }
+            }
+            break; 
+        case DOWN:
+            if(startRow +1 < _gameOptions.rowY )
+            {
+                if(ownerAt(startColumn, startRow+1) == startOwner)
+                {
+                    counter = 1 + checkFourInDirection(startColumn, startRow+1, DOWN);
+                }
+            }
+            break;
+        case UP:
+            if(startRow -1 >= 0 )
+            {
+                if(ownerAt(startColumn, startRow-1) == startOwner)
+                {
+                    counter = 1 + checkFourInDirection(startColumn, startRow-1, UP);
+                }
+            }
+            break;
+        case UP_RIGHT:
+            if(startColumn +1 < _gameOptions.rowX && startRow -1 >= 0 )
+            {
+                if(ownerAt(startColumn +1, startRow-1) == startOwner)
+                {
+                    counter = 1 + checkFourInDirection(startColumn +1, startRow-1, UP_RIGHT);
+                }
+            }
+            break;
+        case DOWN_LEFT:
+             if(startColumn -1 >= 0 && startRow +1 < _gameOptions.rowY )
+            {
+                if(ownerAt(startColumn -1, startRow +1) == startOwner)
+                {
+                    counter = 1 + checkFourInDirection(startColumn -1, startRow +1, DOWN_LEFT);
+                }
+            }
+            break;
+        case UP_LEFT:
+            if(startColumn -1 >= 0 && startRow -1 >= 0 )
+            {
+                if(ownerAt(startColumn -1, startRow -1) == startOwner)
+                {
+                    counter = 1 + checkFourInDirection(startColumn -1, startRow -1, UP_LEFT);
+                }
+            }
+            break;
+
+        case DOWN_RIGHT:
+            if(startColumn +1 < _gameOptions.rowX && startRow +1 < _gameOptions.rowY)
+            {
+                    if(ownerAt(startColumn +1, startRow +1) == startOwner)
+                    {
+                        counter = 1 + checkFourInDirection(startColumn +1, startRow +1, DOWN_RIGHT);
+                    }
+            }
+            break;
+        default:
+            Logger::GetInstance().LogError("Invalid direction in checkFourInDirection");
+            return 0;
+    }
+    return counter;
 }
 
 bool ConnectFour::checkForDraw()
@@ -155,7 +260,7 @@ bool ConnectFour::checkForDraw()
 //
 std::string ConnectFour::initialStateString()
 {
-    return "00000000000000000000000000000000000000000";
+    return "000000000000000000000000000000000000000000";
 }
 
 //
@@ -164,7 +269,7 @@ std::string ConnectFour::initialStateString()
 //
 std::string ConnectFour::stateString()
 {
-    std::string s = "00000000000000000000000000000000000000000";
+    std::string s = "000000000000000000000000000000000000000000";
     _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
         Bit *bit = square->bit();
         if (bit) {
