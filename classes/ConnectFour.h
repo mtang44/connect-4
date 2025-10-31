@@ -35,6 +35,7 @@ private:
     Bit *       PieceForPlayer(const int playerNumber);
     Player*     ownerAt(int x, int y) const;
     int         negamax(std::string& state, int depth, int playerColor);
+    int         evaluateAiBoard(const std::string& state);
 
     Grid*       _grid;
     struct {
@@ -43,7 +44,9 @@ private:
         int pos;
     }_lastMove;
     enum Direction { RIGHT, LEFT, UP, DOWN, UP_RIGHT, DOWN_LEFT, UP_LEFT, DOWN_RIGHT };
+    enum AiDirectionCheck { HORIZONTAL, VERTICAL, DIAGONAL_RIGHT,DIAGONAL_LEFT};
     int         checkFourInDirection(int startColumn, int startRow, Direction direction); // added for winner check
+    int         findNumberPieces(const std::string& state, int index, char player, AiDirectionCheck direction);
     
 };
 

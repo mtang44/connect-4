@@ -162,7 +162,7 @@ namespace ClassGame {
             if (winner)
             {
                 gameOver = true;
-                gameWinner = winner->playerNumber();
+                gameWinner = winner->playerNumber() +1;
             }
             if (game->checkForDraw()) {
                 gameOver = true;
@@ -190,9 +190,7 @@ namespace ClassGame {
                    }
                    logFile.close();
                    std::cout << "file located at : " << std::filesystem::current_path() << '\n';
-                   Logger::GetInstance().LogInfo("Log file created: game_log.txt");
-
-                   
+                   Logger::GetInstance().LogInfo("Log file created: game_log.txt");                   
                }
                else
                {
