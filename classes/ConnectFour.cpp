@@ -29,13 +29,16 @@ void ConnectFour::setUpBoard()
     setNumberOfPlayers(2);
     _gameOptions.rowX = 7;
     _gameOptions.rowY = 6;
-    _grid->initializeSquares(80, "square.png");
+    if(_gameOptions.playerTypeSelected)
+    {
+        _grid->initializeSquares(80, "square.png");
 
-    if (gameHasAI() && (_gameOptions.playerVSAI == true || _gameOptions.AIvsAI == true)) {
-        setAIPlayer(AI_PLAYER);
+        if (gameHasAI() && (_gameOptions.playerVSAI == true || _gameOptions.AIvsAI == true)) {
+            setAIPlayer(AI_PLAYER);
+        }
+        startGame();
     }
 
-    startGame();
 }
 
 //
@@ -304,6 +307,7 @@ void ConnectFour::updateAI()
 {
 
     std::cout << "AI update called" << std::endl;
+    
     int bestVal = -1000;
     BitHolder* bestMove = nullptr;
     std::string state = stateString();
@@ -316,9 +320,11 @@ void ConnectFour::updateAI()
         std::cout << "Index: " << index << std::endl;
         std::cout << "len of state string: " << state.length() << std::endl;
         // Check if cell is empty
+        
         if (state[index] == '0') {
             // Make the move
             state[index] = '2';
+            cout << "calculating first negamax move" <<endl;
             int moveVal = -negamax(state, 0, HUMAN_PLAYER);
             // Undo the move
             state[index] = '0';
@@ -345,9 +351,11 @@ bool isAiBoardFull(const std::string& state) {
     return state.find('0') == std::string::npos;
 }
 
-int ConnectFour:: findNumberPieces(const std::string& state, int index, char player, AiDirectionCheck direction)
+int ConnectFour:: findNumberPieces(const std::string& state, int index, int parentPlayer, AiDirectionCheck direction)
 {
     int pieceCount = 0;
+    char player = parentPlayer == HUMAN_PLAYER ? '1' : '2'; // converts -1,1 player to 1,2 for state string
+
     switch(direction)
     {
         case HORIZONTAL:
@@ -465,7 +473,7 @@ int calculatePieceScore(int friendlyPieces, int enemyPieces)
     return score;
 }
 
-int ConnectFour::evaluateAiBoard(const std::string& state) {
+int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
      
     // count for  horiozntal sequences of pieces in a row and assign score
     // count for vertical sequences of pieces in a column and assign a score
@@ -479,10 +487,11 @@ int ConnectFour::evaluateAiBoard(const std::string& state) {
 
     // start sliding window in bottom left corner of board
     int score = 0;
-    for(int row = 5; row >= 2; row--)
+    for(int row = 5; row > 2; row--)
     {
          for(int col = 0; col < _gameOptions.rowX-3; col++)
          {
+            cout << "Current 4x4 pivot created at Col: " + to_string(col) + " Row: " + to_string(row) << endl;
             int index = row * 7 + col;
             int tempIndex = index;
             int friendlyCount = 0;
@@ -490,34 +499,42 @@ int ConnectFour::evaluateAiBoard(const std::string& state) {
             // if(state[index] != '0')
             // {
                 // check horizontal rows
+                cout << "Checking horizontal 4x4 window rows" << endl;
                 for(int k = 0; k < slidingWindowSize; k++)
                 {
-                    friendlyCount = findNumberPieces(state,tempIndex, '2', HORIZONTAL); // might need to look into if switching player color with negamax
-                    enemyCount = findNumberPieces(state,tempIndex, '1', HORIZONTAL);
+                    friendlyCount = findNumberPieces(state,tempIndex, playerColor, HORIZONTAL); // might need to look into if switching player color with negamax
+                    enemyCount = findNumberPieces(state,tempIndex, -playerColor, HORIZONTAL);
                     score += calculatePieceScore(friendlyCount,enemyCount);
                     tempIndex -=7; // moves one row up and searches horizontal again 
                 }
+                cout << "finished checking horzontal 4x4 window rows" << endl;
+
                 tempIndex = index;
+                   cout << "starting check on verticle 4x4 window rows" << endl;
                 for(int k = 0; k < slidingWindowSize; k++)
                 {
                 // check Vertical columns
-                  friendlyCount = findNumberPieces(state,tempIndex, '2', VERTICAL); // look into alternating player piece 
-                  enemyCount = findNumberPieces(state,tempIndex, '1', VERTICAL);
+                  friendlyCount = findNumberPieces(state,tempIndex, playerColor, VERTICAL); // look into alternating player piece 
+                  enemyCount = findNumberPieces(state,tempIndex, -playerColor, VERTICAL);
                   score += calculatePieceScore(friendlyCount,enemyCount);
                   tempIndex += 1; // sets index to begin in next column 
                 }
+                  cout << "finished check on vertical 4x4 window rows" << endl;
                 // check Diagonal right 
+                  cout << "starting check on diagonal right 4x4 window rows" << endl;
                 tempIndex = index;
-                friendlyCount = findNumberPieces(state,tempIndex,'2',DIAGONAL_RIGHT);
-                enemyCount = findNumberPieces(state,tempIndex,'1',DIAGONAL_RIGHT);
+                friendlyCount = findNumberPieces(state,tempIndex,playerColor,DIAGONAL_RIGHT);
+                enemyCount = findNumberPieces(state,tempIndex,-playerColor,DIAGONAL_RIGHT);
                 score += calculatePieceScore(friendlyCount,enemyCount);
-
+                 cout << "finished check on diagonal right 4x4 window rows" << endl;
                 // check diagonal left;
+                cout << "starting check on diagonal left 4x4 window rows" << endl;
                 tempIndex -= 21; // sets index to = top left of 4x4 window
-                friendlyCount = findNumberPieces(state,tempIndex,'2',DIAGONAL_LEFT);
-                enemyCount = findNumberPieces(state,tempIndex,'1',DIAGONAL_LEFT);
+                friendlyCount = findNumberPieces(state,tempIndex, playerColor,DIAGONAL_LEFT);
+                enemyCount = findNumberPieces(state,tempIndex, -playerColor,DIAGONAL_LEFT);
                 score += calculatePieceScore(friendlyCount,enemyCount);
                }
+               cout << "finished check on diagonal left 4x4 window rows" << endl;
             //}
          }
     return score;
@@ -529,7 +546,10 @@ int ConnectFour::evaluateAiBoard(const std::string& state) {
 //
 int ConnectFour::negamax(std::string& state, int depth, int playerColor) 
 {
-    int score = evaluateAiBoard(state);
+    cout << "about to evaluateAiBoard " <<endl;
+    int score = evaluateAiBoard(state, playerColor);
+    cout << "finished calling evaluateAiBoard " <<endl;
+    cout << "Score = " + to_string(score) <<endl;
 
     // Check if AI wins, human wins, or draw
     if(abs(score) >= 1000) { 
@@ -545,9 +565,13 @@ int ConnectFour::negamax(std::string& state, int depth, int playerColor)
 
     // thought that instead of having nested forloop for each open position instead make move based on only looking at top row then seeing where the piece falls to
     int bestVal = -1000; // Min value
-    for (int y = 0; y < 3; y++) {
-        for (int x = 0; x < 3; x++) {
+    for (int x = 0; x < 6; x++) { // only need to look at top row since drop will always fall to lowest piece. 
+          // check for loswest position: 
+        int y = findLowestEmpty(x);
             // Check if cell is empty
+          
+        if(y != -1) // skip column if already filled.
+        {
             if (state[y * 7 + x] == '0') { // TO look into: Placing piece at top does not move piece down when doing y *7 +x, need to use logic from action for empty holder. 
                 // Make the move
                 state[y * 7 + x] = playerColor == HUMAN_PLAYER ? '1' : '2'; // Set the cell to the current player's color

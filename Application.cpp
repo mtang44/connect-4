@@ -16,6 +16,7 @@ namespace ClassGame {
         // our global variables
         //
         bool LogWindowVisible = false;
+        bool playerTypeSelected = false;
         void showLogWindow(bool* p_open);
         Game *game = nullptr;
         bool gameOver = false;
@@ -48,8 +49,6 @@ namespace ClassGame {
                 //ImGui::ShowDemoWindow();
 
                 ImGui::Begin("Settings");
-                cout << "settings window created" << endl;
-                cout << "testing gameOver " << endl;
                 if (gameOver) {
                     ImGui::Text("Game Over!");
                     ImGui::Text("Winner: %d", gameWinner);
@@ -57,10 +56,11 @@ namespace ClassGame {
                         game->stopGame();
                         game->setUpBoard();
                         gameOver = false;
+                        playerTypeSelected = false;
                         gameWinner = -1;
                     }
                 }
-                cout << "testing !game " << endl;
+                
                 if (!game) {
                     if (ImGui::Button("Start Tic-Tac-Toe")) {
                         game = new TicTacToe();
@@ -78,19 +78,19 @@ namespace ClassGame {
                     {
                         game = new ConnectFour();
                         game->setUpBoard();
+                       
                     }
+                     
                 } else {
-                    ImGui::Text("Current Player Number: %d", game->getCurrentPlayer()->playerNumber());
-                    ImGui::Text("Current Board State: %s", game->stateString().c_str());
-                } 
-                //test 
-            
-                // if(game->_gameOptions.playerTypeSelected == false)
-                // {
-                    if(ImGui::Button("Play AI"))
+                  
+                    if(!playerTypeSelected)
+                    {
+                        ImGui::Text("Please Select a player type"); 
+                        if(ImGui::Button("Play AI"))
                         {
                             game->_gameOptions.playerVSAI = true;
                             game->_gameOptions.playerTypeSelected = true;
+                            playerTypeSelected = true;
                             
                             game->setUpBoard(); // recreates board with AI player active
                             Logger::GetInstance().LogGameEvent("Ai Player Enabled");
@@ -100,28 +100,38 @@ namespace ClassGame {
                             game->_gameOptions.playerVSAI = false;
                             //game->setAIPlayer(false);
                             game->_gameOptions.playerTypeSelected = true;
+                            playerTypeSelected = true;
                             game->setUpBoard(); // recreates board with 2nd player active
                             Logger::GetInstance().LogGameEvent("Player 2 Enabled");
                         }
-                //}
-                // cout << "playerTypeselected test complete" << endl;
+
+                    }
+                    else
+                    {
+                    ImGui::Text("Current Player Number: %d", game->getCurrentPlayer()->playerNumber());
+                    ImGui::Text("Current Board State: %s", game->stateString().c_str());
+                    }
+                  
+
+                } 
                 ImGui::End();
 
-                ImGui::Begin("GameWindow");
-                // test
-                 //game->drawFrame();
-                //  if(!game->_gameOptions.playerTypeSelected){
+                // ImGui::Begin("GameWindow");
+                // // test
+                //  //game->drawFrame();
+                // //  if(!game->_gameOptions.playerTypeSelected){
                 
-                //     ImGui::Text("Please select Player vs Player or Player vs AI to begin");
+                // //     ImGui::Text("Please select Player vs Player or Player vs AI to begin");
                 
-	            // }
-                ImGui::End();
+	            // // }
+                // ImGui::End();
                
 
                 if (game) {
                     if (game->gameHasAI() && (game->getCurrentPlayer()->isAIPlayer() && game->_gameOptions.playerVSAI || game->_gameOptions.AIvsAI))
                     {
                         Logger::GetInstance().LogGameEvent("AI is making a move");
+                        
                          game->updateAI();
                     }
                     game->drawFrame();
