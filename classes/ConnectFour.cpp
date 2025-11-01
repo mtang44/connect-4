@@ -47,9 +47,9 @@ void ConnectFour::setUpBoard()
 bool ConnectFour::actionForEmptyHolder(BitHolder &holder)
 {
     
-    std::cout << "actionForEmptyHolder called" << std::endl;
+    //std::cout << "actionForEmptyHolder called" << std::endl;
     ChessSquare* square = dynamic_cast<ChessSquare*>(&holder);
-    Logger::GetInstance().LogGameEvent("Placing piece at position: (" + std::to_string(square->getColumn()) + ", " + std::to_string(  square->getRow()) + ")");
+    //Logger::GetInstance().LogGameEvent("Placing piece at position: (" + std::to_string(square->getColumn()) + ", " + std::to_string(  square->getRow()) + ")");
     int x = square->getColumn();
     int y = square->getRow();
     if(ownerAt(x,y) != nullptr)
@@ -85,7 +85,7 @@ int ConnectFour::findLowestEmpty(int column)
 {
     for (int row = 5; row >= 0; --row) {
         if (ownerAt(column, row) == nullptr) {
-            Logger::GetInstance().LogGameEvent("Lowest Empty = column " + std::to_string(column)+"in row " + to_string(row));
+            //Logger::GetInstance().LogGameEvent("Lowest Empty = column " + std::to_string(column)+"in row " + to_string(row));
             return row;
         }
         
@@ -119,14 +119,14 @@ void ConnectFour::stopGame()
 //
 Player* ConnectFour::ownerAt(int col, int row) const
 {
-    Logger::GetInstance().LogGameEvent("testing x position " + to_string(row) +" with y" + to_string(col));
+    //Logger::GetInstance().LogGameEvent("testing x position " + to_string(row) +" with y" + to_string(col));
     if (row < 0 || row >= _gameOptions.rowY || col < 0 || col >= _gameOptions.rowX) {
         return nullptr;
     }
 
     auto square = _grid->getSquare(col, row);
-    Logger::GetInstance().LogGameEvent("Checking owner at position: (" + std::to_string(row) + ", " + std::to_string(col) + ")");
-    Logger::GetInstance().LogGameEvent("Square bit presence: " + std::string(square && square->bit() ? "Yes" : "No"));
+    //Logger::GetInstance().LogGameEvent("Checking owner at position: (" + std::to_string(row) + ", " + std::to_string(col) + ")");
+    //Logger::GetInstance().LogGameEvent("Square bit presence: " + std::string(square && square->bit() ? "Yes" : "No"));
     if (!square || !square->bit()) {
         return nullptr;
     }
@@ -300,6 +300,20 @@ void ConnectFour::setStateString(const std::string &s)
 }
 
 
+int findAiLowestEmpty(std::string& state, int x) {
+    // Start from the bottom row and go up
+    for (int y = 5; y >= 0; y--) {
+        if(state[y * 7 + x] == '0')
+        {
+            return y;
+        }
+    }
+    return -1; // column full
+}
+
+
+
+
 //
 // this is the function that will be called by the AI
 //
@@ -311,33 +325,34 @@ void ConnectFour::updateAI()
     int bestVal = -1000;
     BitHolder* bestMove = nullptr;
     std::string state = stateString();
-    std::cout << "Current state: " << state << std::endl;
+    //std::cout << "Current state: " << state << std::endl;
 
     // Traverse all cells, evaluate minimax function for all empty cells
-    _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
-       // std::cout << "Evaluating square at (" << x << ", " << y << ")" << std::endl;
-        int index = y * 7 + x;
-        std::cout << "Index: " << index << std::endl;
-        std::cout << "len of state string: " << state.length() << std::endl;
-        // Check if cell is empty
-        
-        if (state[index] == '0') {
-            // Make the move
-            state[index] = '2';
-            cout << "calculating first negamax move" <<endl;
-            int moveVal = -negamax(state, 0, HUMAN_PLAYER);
-            // Undo the move
-            state[index] = '0';
-            // If the value of the current move is more than the best value, update best
-            if (moveVal > bestVal) {
-                bestMove = square;
-                bestVal = moveVal;
+    _grid->forEachSquare([&](ChessSquare* square, int x, int y) { // only need to look at top row since drop will always fall to lowest piece. 
+          // check for loswest position: 
+            // Check if cell is empty
+            // std::cout << "Evaluating square at (" << x << ", " << y << ")" << std::endl;
+            int index = y * 7 + x;
+            // std::cout << "Index: " << index << std::endl;
+            //std::cout << "len of state string: " << state.length() << std::endl;
+            // Check if cell is empty
+            
+            if (state[index] == '0') {
+                // Make the move
+                state[index] = '2';
+                //cout << "calculating first negamax move" <<endl;
+                int moveVal = -negamax(state, 0, -1000, +1000,HUMAN_PLAYER); // was HUMAN PLAYER
+                // Undo the move
+            
+                // If the value of the current move is more than the best value, update best
+                if (moveVal > bestVal) {
+                    bestMove = square;
+                    bestVal = moveVal;
+                }
+                state[index] = '0';
             }
-        }
-    });
-
     std::cout << "Best move value: " << bestVal << std::endl;
-
+  });
 
     // Make the best move
     if(bestMove) {
@@ -491,7 +506,7 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
     {
          for(int col = 0; col < _gameOptions.rowX-3; col++)
          {
-            cout << "Current 4x4 pivot created at Col: " + to_string(col) + " Row: " + to_string(row) << endl;
+            //cout << "Current 4x4 pivot created at Col: " + to_string(col) + " Row: " + to_string(row) << endl;
             int index = row * 7 + col;
             int tempIndex = index;
             int friendlyCount = 0;
@@ -499,7 +514,7 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
             // if(state[index] != '0')
             // {
                 // check horizontal rows
-                cout << "Checking horizontal 4x4 window rows" << endl;
+                //cout << "Checking horizontal 4x4 window rows" << endl;
                 for(int k = 0; k < slidingWindowSize; k++)
                 {
                     friendlyCount = findNumberPieces(state,tempIndex, playerColor, HORIZONTAL); // might need to look into if switching player color with negamax
@@ -507,10 +522,10 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
                     score += calculatePieceScore(friendlyCount,enemyCount);
                     tempIndex -=7; // moves one row up and searches horizontal again 
                 }
-                cout << "finished checking horzontal 4x4 window rows" << endl;
+                //cout << "finished checking horzontal 4x4 window rows" << endl;
 
                 tempIndex = index;
-                   cout << "starting check on verticle 4x4 window rows" << endl;
+                  // cout << "starting check on verticle 4x4 window rows" << endl;
                 for(int k = 0; k < slidingWindowSize; k++)
                 {
                 // check Vertical columns
@@ -519,22 +534,22 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
                   score += calculatePieceScore(friendlyCount,enemyCount);
                   tempIndex += 1; // sets index to begin in next column 
                 }
-                  cout << "finished check on vertical 4x4 window rows" << endl;
+                  //cout << "finished check on vertical 4x4 window rows" << endl;
                 // check Diagonal right 
-                  cout << "starting check on diagonal right 4x4 window rows" << endl;
+                  //cout << "starting check on diagonal right 4x4 window rows" << endl;
                 tempIndex = index;
                 friendlyCount = findNumberPieces(state,tempIndex,playerColor,DIAGONAL_RIGHT);
                 enemyCount = findNumberPieces(state,tempIndex,-playerColor,DIAGONAL_RIGHT);
                 score += calculatePieceScore(friendlyCount,enemyCount);
-                 cout << "finished check on diagonal right 4x4 window rows" << endl;
+                 //cout << "finished check on diagonal right 4x4 window rows" << endl;
                 // check diagonal left;
-                cout << "starting check on diagonal left 4x4 window rows" << endl;
+                //cout << "starting check on diagonal left 4x4 window rows" << endl;
                 tempIndex -= 21; // sets index to = top left of 4x4 window
                 friendlyCount = findNumberPieces(state,tempIndex, playerColor,DIAGONAL_LEFT);
                 enemyCount = findNumberPieces(state,tempIndex, -playerColor,DIAGONAL_LEFT);
                 score += calculatePieceScore(friendlyCount,enemyCount);
                }
-               cout << "finished check on diagonal left 4x4 window rows" << endl;
+               //cout << "finished check on diagonal left 4x4 window rows" << endl;
             //}
          }
     return score;
@@ -544,11 +559,12 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
 //
 // player is the current player's number (AI or human)
 //
-int ConnectFour::negamax(std::string& state, int depth, int playerColor) 
+
+int ConnectFour::negamax(std::string& state, int depth, int alpha, int beta, int playerColor) 
 {
-    cout << "about to evaluateAiBoard " <<endl;
-    int score = evaluateAiBoard(state, playerColor);
-    cout << "finished calling evaluateAiBoard " <<endl;
+    //cout << "about to evaluateAiBoard " <<endl;
+    int score = evaluateAiBoard(state, -playerColor); // was playerColor . . . 
+    //cout << "finished calling evaluateAiBoard " <<endl;
     cout << "Score = " + to_string(score) <<endl;
 
     // Check if AI wins, human wins, or draw
@@ -565,22 +581,44 @@ int ConnectFour::negamax(std::string& state, int depth, int playerColor)
 
     // thought that instead of having nested forloop for each open position instead make move based on only looking at top row then seeing where the piece falls to
     int bestVal = -1000; // Min value
-    for (int x = 0; x < 6; x++) { // only need to look at top row since drop will always fall to lowest piece. 
+    int array[] = {3,2,4,1,5,0,6};
+    int column;
+    for (int x = 0; x < 7; x++) { // only need to look at top row since drop will always fall to lowest piece. 
           // check for loswest position: 
-        int y = findLowestEmpty(x);
+        // int y = findLowestEmpty(x);
+        int column = array[x];
+
+        // Start from the bottom row and go up
+        int y = findAiLowestEmpty(state,column);
+
             // Check if cell is empty
           
         if(y != -1) // skip column if already filled.
         {
-            if (state[y * 7 + x] == '0') { // TO look into: Placing piece at top does not move piece down when doing y *7 +x, need to use logic from action for empty holder. 
+            if (state[y * 7 + column] == '0') { // TO look into: Placing piece at top does not move piece down when doing y *7 +x, need to use logic from action for empty holder. 
                 // Make the move
-                state[y * 7 + x] = playerColor == HUMAN_PLAYER ? '1' : '2'; // Set the cell to the current player's color
-                bestVal = std::max(bestVal, -negamax(state, depth + 1, -playerColor));
+                state[y * 7 + column] = playerColor == HUMAN_PLAYER ? '1' : '2'; // Set the cell to the current player's color
+                cout << "testing move at y: " + to_string(y) + " x: " + to_string(column) << endl;
+                int result = -negamax(state, depth + 1, -beta, -alpha, -playerColor);
+                if(result > bestVal)
+                {
+                    bestVal = result;
+                }
+                if(result > alpha)
+                {
+                    alpha = result;
+                }
+                state[y * 7 + column] = '0';
                 // Undo the move for backtracking
-                state[y * 7 + x] = '0';
+                if(alpha >= beta)
+                {
+                    break;
+                }
+                
             }
-        }
+        }  
     }
+
 
     return bestVal;
 }
