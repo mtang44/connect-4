@@ -314,20 +314,7 @@ int findAiLowestEmpty(std::string& state, int x) {
 // this is the function that will be called by the AI
 //
 void ConnectFour::updateAI() 
-{
-  //  testing to make sure statestring and grid match delete later
-  //=========================================
-    std::string teststate = stateString();
-    std::cout << "AI board state:\n";
-    for(int row = 0; row < 6; row++) {
-        for(int col = 0; col < 7; col++) {
-            std::cout << teststate[row * 7 + col] << " ";
-        }
-        std::cout << std::endl;
-    }
-//============================================
-    std::cout << "AI update called" << std::endl;
-    
+{   
     int bestVal = -1000;
     BitHolder* bestMove = nullptr;
     std::string state = stateString();
@@ -363,29 +350,33 @@ void ConnectFour::updateAI()
                     bestMove = _grid->getSquareByIndex(y * 7 +column);
 
                     bestVal = moveVal;
-                    std::cout << "New best move: column " << column << " row " << y << " value: " << moveVal << std::endl; // testing new
+                    //std::cout << "New best move: column " << column << " row " << y << " value: " << moveVal << std::endl; // testing new
                 }
                 state[index] = '0';
             }
         }
         
-    std::cout << "Best move value: " << bestVal << std::endl;
+    //std::cout << "Best move value: " << bestVal << std::endl;
     }
-      // testing fall back and pick next open 
  
     // Make the best move
     if(bestMove) {
-        std::cout << "AI making move at position: (" << bestMove->getPosition().x << ", " << bestMove->getPosition().y << ")" << std::endl;
+        //std::cout << "AI making move at position: (" << bestMove->getPosition().x << ", " << bestMove->getPosition().y << ")" << std::endl;
         if (actionForEmptyHolder(*bestMove)) {
         }
     }
   // created a fall back incase bestmove does not exist;
    if (!bestMove) {
+    int array[] = {3,2,4,1,5,0,6};
+    int column;
     for (int col = 0; col < 7; col++) {
-        int y = findAiLowestEmpty(state, col);
+        column = array[col];
+        int y = findAiLowestEmpty(state, column);
         if (y != -1) {
-            bestMove = _grid->getSquare(col, y);
-            std::cout << "Fallback move at column " << col << " row " << y << std::endl;
+            bestMove = _grid->getSquare(column, y);
+            std::cout << "Fallback move at column " << column << " row " << y << std::endl;
+            if (actionForEmptyHolder(*bestMove)) {
+        }
             break;
         }
     }
@@ -733,7 +724,6 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
     if(depth == 4||isAiBoardFull(state)) {
         return score * playerColor; 
     }
-
     // thought that instead of having nested forloop for each open position instead make move based on only looking at top row then seeing where the piece falls to
     int bestVal = -1000; // Min value
     int array[] = {3,2,4,1,5,0,6};

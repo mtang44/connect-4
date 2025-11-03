@@ -1,10 +1,16 @@
+CMPM123 assignment 4, Michael Tang
+
 For this assignment this assignment I tried to implement a connect four negamax algorthm that uses alpha beta pruning. 
 
-A key think to note is that there is a bug that as of right now I have been unable to fix where the computer will get stuck making a move as it keeps thinking the bestMove does not ever exist. This causes the game to get stuck in an infinite loop as it is never able to find a move better than the base -1000 move. I am not sure why this is. 
+A key think to note is that there is a bug that as of right now I have been unable to find where the computer will get stuck trying to make a move. From my understanding about 1/2 - 2/3 through the game negamax breaks where it suddenly believes there is no bestMove that can ever be made. This causes the game to get stuck in an infinite loop as it is never able to find a move better than the base -1000 move. In response I coded a fall back solution in updateAI where if the program hits this bug and can't find a move, it will randomly pick the first open move it can make and continue from there. 
+
+This makes it so that the ai can continue playing. 
 
 
-For my AI implementation updateAI() functions as the main loop that checks for the next move. updateAI() starts by choosing from an array of best initial columns to play, and finds the lowest empty row in that column. If it finds a move it calls negamax based on that new move while also applying alpha beta runing. 
+For my AI implementation updateAI() functions as the main loop that checks for the next move. updateAI() starts by choosing from an array of best initial columns to play, and finds the lowest empty row in that column. If it finds a move it calls negamax based on that new move while also applying alpha beta pruning. When negamax returns it will test if the best move from negamax is > than the previous best move. In the event that negamax breaks there is a fall back check which will find the first open move based on the weight of the columns. 
 
 
 In negamax() the function operates by first evaluating the game board using evaluateAiBoard(). 
-Evaluate AiBoard functions by calling helper functions which create a 4x4 sliding window in the bottom left corner of the game board and begins searching for the number of friendly pieces and enemy pieces on the board. based on the number of pieces the program than assigns a score 
+Evaluate AiBoard functions by calling helper functions which create a 4x4 sliding window in the bottom left corner of the game board and begins searching for the number of friendly pieces and enemy pieces on the board. based on the number of pieces the program than assigns a score. Once the board has been evaluated, negamax will search for the next optimal piece to place and recursively run negamax on that new move playing as the opposing player. 
+
+While not directly related to the AI, one key implementation I had for my program was checking for a winner. Outside of CheckForWinner() I created a movement struct called lastMove which stores the last player column and row. When a new piece is played in actionForEmptyHolder, lastMove will update storing that information. Using this struct, checkForWinner then takes the position of the last move and then begins a recursive search around the piece in every direction. The search calls a function checkFourInDirection which takes in a direction and a row,col and begins recursively searching for the number of successive pieces that belong to the owner. The function will then take the sum of two opposite directions (left + right,up + down . . . etc) and check if their sum is >= 4. If so the game detects a win and returns the player.
