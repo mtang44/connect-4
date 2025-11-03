@@ -1,0 +1,10 @@
+For this assignment this assignment I tried to implement a connect four negamax algorthm that uses alpha beta pruning. 
+
+A key think to note is that there is a bug that as of right now I have been unable to fix where the computer will get stuck making a move as it keeps thinking the bestMove does not ever exist. This causes the game to get stuck in an infinite loop as it is never able to find a move better than the base -1000 move. I am not sure why this is. 
+
+
+For my AI implementation updateAI() functions as the main loop that checks for the next move. updateAI() starts by choosing from an array of best initial columns to play, and finds the lowest empty row in that column. If it finds a move it calls negamax based on that new move while also applying alpha beta runing. 
+
+
+In negamax() the function operates by first evaluating the game board using evaluateAiBoard(). 
+Evaluate AiBoard functions by calling helper functions which create a 4x4 sliding window in the bottom left corner of the game board and begins searching for the number of friendly pieces and enemy pieces on the board. based on the number of pieces the program than assigns a score 

@@ -19,7 +19,7 @@ Bit* ConnectFour::PieceForPlayer(const int playerNumber)
     // depending on playerNumber load the "x.png" or the "o.png" graphic
     Bit *bit = new Bit();
     // should possibly be cached from player class?
-    bit->LoadTextureFromFile(playerNumber == AI_PLAYER ? "o.png" : "x.png");
+    bit->LoadTextureFromFile(playerNumber == AI_PLAYER ? "yellow.png" : "red.png");
     bit->setOwner(getPlayerAt(playerNumber == AI_PLAYER ? 1 : 0));
     return bit;
 }
@@ -46,19 +46,14 @@ void ConnectFour::setUpBoard()
 //
 bool ConnectFour::actionForEmptyHolder(BitHolder &holder)
 {
-    
-    //std::cout << "actionForEmptyHolder called" << std::endl;
     ChessSquare* square = dynamic_cast<ChessSquare*>(&holder);
-    //Logger::GetInstance().LogGameEvent("Placing piece at position: (" + std::to_string(square->getColumn()) + ", " + std::to_string(  square->getRow()) + ")");
+    Logger::GetInstance().LogGameEvent("Placing piece at position: (" + std::to_string(square->getColumn()) + ", " + std::to_string(  square->getRow()) + ")");
     int x = square->getColumn();
     int y = square->getRow();
     if(ownerAt(x,y) != nullptr)
     {
        return false;
     }
-    // if (!clickedSquare) {
-    //     return false;
-    // }
     Bit *bit = PieceForPlayer(getCurrentPlayer()->playerNumber() == 0 ? HUMAN_PLAYER : AI_PLAYER);
     if (bit) {
 
@@ -66,15 +61,16 @@ bool ConnectFour::actionForEmptyHolder(BitHolder &holder)
         int targetY = findLowestEmpty(x);
          ImVec2 pos = s->getPosition();
          bit->setPosition(pos); 
-         s->setBit(bit);
+        // s->setBit(bit);
         ChessSquare *targetSquare = _grid->getSquare(x,targetY);
-        //Logger::GetInstance().LogGameEvent("Lowest Y position found at " + to_string(targetY));
+        Logger::GetInstance().LogGameEvent("Lowest Y position found at " + to_string(targetY));
         targetSquare->setBit(bit);
         pos = targetSquare->getPosition();
         bit->moveTo(pos);
         _lastMove.column = x;
-        _lastMove.row = targetY;
-        //Logger::GetInstance().LogGameEvent("Last placed piece at column " + to_string(_lastMove.column) + " Row: " + to_string(_lastMove.row));
+        _lastMove.row = targetY; 
+        Logger::GetInstance().LogGameEvent(" " + to_string(getCurrentPlayer()->playerNumber()) + "is placing piece in col: " +  to_string(_lastMove.column) + " in row: " +   to_string(_lastMove.row));
+        Logger::GetInstance().LogGameEvent("Last placed piece at column " + to_string(_lastMove.column) + " Row: " + to_string(_lastMove.row));
 ;       endTurn();
 
         return true;
@@ -319,7 +315,17 @@ int findAiLowestEmpty(std::string& state, int x) {
 //
 void ConnectFour::updateAI() 
 {
-
+  //  testing to make sure statestring and grid match delete later
+  //=========================================
+    std::string teststate = stateString();
+    std::cout << "AI board state:\n";
+    for(int row = 0; row < 6; row++) {
+        for(int col = 0; col < 7; col++) {
+            std::cout << teststate[row * 7 + col] << " ";
+        }
+        std::cout << std::endl;
+    }
+//============================================
     std::cout << "AI update called" << std::endl;
     
     int bestVal = -1000;
@@ -328,44 +334,167 @@ void ConnectFour::updateAI()
     //std::cout << "Current state: " << state << std::endl;
 
     // Traverse all cells, evaluate minimax function for all empty cells
-    _grid->forEachSquare([&](ChessSquare* square, int x, int y) { // only need to look at top row since drop will always fall to lowest piece. 
+    //_grid->forEachSquare([&](ChessSquare* square, int x, int y) { // only need to look at top row since drop will always fall to lowest piece. 
           // check for loswest position: 
             // Check if cell is empty
-            // std::cout << "Evaluating square at (" << x << ", " << y << ")" << std::endl;
-            int index = y * 7 + x;
-            // std::cout << "Index: " << index << std::endl;
-            //std::cout << "len of state string: " << state.length() << std::endl;
+            int array[] = {3,2,4,1,5,0,6};
+            int column;
+    for (int x = 0; x < 7; x++) { // only need to look at top row since drop will always fall to lowest piece. 
+          
+        
+        int column = array[x];
+        // Start from the bottom row and go up
+        int y = findAiLowestEmpty(state,column); 
+        //std::cout << "Column " << column << " lowest empty row: " << y << std::endl;
+        if(y != -1)
+        {
+            int index = y * 7 +column;
             // Check if cell is empty
             
             if (state[index] == '0') {
                 // Make the move
                 state[index] = '2';
-                //cout << "calculating first negamax move" <<endl;
-                int moveVal = -negamax(state, 0, -1000, +1000,HUMAN_PLAYER); // was HUMAN PLAYER
+                
+                int moveVal = -negamax(state, 0, -1000, +1000,HUMAN_PLAYER); 
                 // Undo the move
             
                 // If the value of the current move is more than the best value, update best
                 if (moveVal > bestVal) {
-                    bestMove = square;
+                    bestMove = _grid->getSquareByIndex(y * 7 +column);
+
                     bestVal = moveVal;
+                    std::cout << "New best move: column " << column << " row " << y << " value: " << moveVal << std::endl; // testing new
                 }
                 state[index] = '0';
             }
+        }
+        
     std::cout << "Best move value: " << bestVal << std::endl;
-  });
-
+    }
+      // testing fall back and pick next open 
+ 
     // Make the best move
     if(bestMove) {
         std::cout << "AI making move at position: (" << bestMove->getPosition().x << ", " << bestMove->getPosition().y << ")" << std::endl;
         if (actionForEmptyHolder(*bestMove)) {
         }
     }
+  // created a fall back incase bestmove does not exist;
+   if (!bestMove) {
+    for (int col = 0; col < 7; col++) {
+        int y = findAiLowestEmpty(state, col);
+        if (y != -1) {
+            bestMove = _grid->getSquare(col, y);
+            std::cout << "Fallback move at column " << col << " row " << y << std::endl;
+            break;
+        }
+    }
+}
+
 }
 // test 
 bool isAiBoardFull(const std::string& state) {
     return state.find('0') == std::string::npos;
 }
 
+bool HorizontalBlocked(const std::string& state, int index, int size, int player)
+{
+    constexpr int WIDTH = 7;
+    char enemyChar = (player == 1 ? '2' : '1');
+
+    int row = index / WIDTH;
+    int col = index % WIDTH;
+
+    // Left end
+    bool leftBlocked = false;
+    int leftCol = col - 1;
+    if (leftCol < 0) // off the board
+        leftBlocked = true;
+    else if (state[row * WIDTH + leftCol] == enemyChar)
+        leftBlocked = true;
+
+    // Right end
+    bool rightBlocked = false;
+    int rightCol = col + (size);
+    if (rightCol >= WIDTH)
+        rightBlocked = true;
+    else if (state[row * WIDTH + rightCol] == enemyChar)
+        rightBlocked = true;
+
+    return leftBlocked && rightBlocked;
+}
+
+bool VerticalBlockedIn(const std::string& state, int index, int size, int player)
+{
+    constexpr int WIDTH = 7;
+    constexpr int HEIGHT = 6;
+    char enemyChar = (player == 1 ? '2' : '1');
+
+    int row = index / WIDTH;
+    int col = index % WIDTH;
+
+    // Top end
+    bool topBlocked = false;
+    int topRow = row - 1;
+    if (topRow < 0)
+        topBlocked = true;
+    else if (state[topRow * WIDTH + col] == enemyChar)
+        topBlocked = true;
+
+    // Bottom end
+    bool bottomBlocked = false;
+    int bottomRow = row + size;
+    if (bottomRow >= HEIGHT)
+        bottomBlocked = true;
+    else if (state[bottomRow * WIDTH + col] == enemyChar)
+        bottomBlocked = true;
+
+    return topBlocked && bottomBlocked;
+}
+
+bool DiagonalUpRightBlockedIn(const std::string& state, int index, int size, int player)
+{
+    constexpr int WIDTH = 7;
+    constexpr int HEIGHT = 6;
+    char enemyChar = (player == 1 ? '2' : '1');
+
+    int row = index / WIDTH;
+    int col = index % WIDTH;
+
+    // Top-right end
+    int trRow = row - (size - 1);
+    int trCol = col + (size - 1);
+    bool topRightBlocked = (trRow < 0 || trCol >= WIDTH) || state[trRow * WIDTH + trCol] == enemyChar;
+
+    // Bottom-left end
+    int blRow = row + (size - 1);
+    int blCol = col - (size - 1);
+    bool bottomLeftBlocked = (blRow >= HEIGHT || blCol < 0) || state[blRow * WIDTH + blCol] == enemyChar;
+
+    return topRightBlocked && bottomLeftBlocked;
+}
+
+bool DiagonalDownLeftBlockedIn(const std::string& state, int index, int size, int player)
+{
+    constexpr int WIDTH = 7;
+    constexpr int HEIGHT = 6;
+    char enemyChar = (player == 1 ? '2' : '1');
+
+    int row = index / WIDTH;
+    int col = index % WIDTH;
+
+    // Bottom-left end
+    int blRow = row + (size - 1);
+    int blCol = col - (size - 1);
+    bool bottomLeftBlocked = (blRow >= HEIGHT || blCol < 0) || state[blRow * WIDTH + blCol] == enemyChar;
+
+    // Top-right end
+    int trRow = row - (size - 1);
+    int trCol = col + (size - 1);
+    bool topRightBlocked = (trRow < 0 || trCol >= WIDTH) || state[trRow * WIDTH + trCol] == enemyChar;
+
+    return bottomLeftBlocked && topRightBlocked;
+}
 int ConnectFour:: findNumberPieces(const std::string& state, int index, int parentPlayer, AiDirectionCheck direction)
 {
     int pieceCount = 0;
@@ -384,51 +513,73 @@ int ConnectFour:: findNumberPieces(const std::string& state, int index, int pare
             }
             // check for 3 in a row:
             // check if XXXO or OXXX no other possible 3 grouping options
-            else if((state[index] == player && state[index+1] == player && state[index+2] == player) ||(state[index+1] == player && state[index+2] == player && state[index+3] == player))
+            else if((state[index] == player && state[index+1] == player && state[index+2] == player )||(state[index+1] == player && state[index+2] == player && state[index+3] == player ))
             {
-                return 3;
+                if(!HorizontalBlocked(state, index, player,3))
+                {
+                    return 3;
+                }
+                return 0;
+                
             }
             // check for pairs XX00, or 00XX or 0XX0
             else if( (state[index] == player && state[index+1] == player) || (state[index+2] == player && state[index+3] == player) || (state[index+1 ] == player && state[index+2] == player)) 
             {
-                return 2;
-            }
-            else // if XOXO  or OXOX
-            {
+                 if(!HorizontalBlocked(state, index, player, 2))
+                {
+                    return 2;
+                }
                 return 0;
             }
+             // if XOXO  or OXOX or blocked
+            return 0;
         case VERTICAL:
             //checking for four in a row
-            if(state[index] == player && state[index -7] == player && state[index -14] == player && state[index -21] == player)
+            if((state[index] == player) && (state[index -7] == player) && (state[index -14] == player) && (state[index -21] == player))
             {
+                
                 return 4;
             }
             // check for verticle 3 
-            else if((state[index] == player && state[index -7] == player && state[index -14] == player) ||state[index -7] == player && state[index -14] == player && state[index -21] == player )
+            else if(((state[index] == player) && (state[index -7] == player) && (state[index -14] == player)) || (state[index -7] == player && state[index -14] == player && state[index -21] == player ))
             {
-                return 3;
+                if(!VerticalBlockedIn(state, index, 3, player))
+                {
+                    return 3;
+                }
+                return 0;
             }
             else if((state[index] == player && state[index-7] == player) || (state[index-7] == player && state[index -14] == player) || (state[index -14] == player && state[index-21] == player))
             {
-                return 2;
-            }
-            else{
+                 if(!VerticalBlockedIn(state, index, 2, player))
+                {
+                    return 2;
+                }
                 return 0;
             }
+            return 0;
         case DIAGONAL_RIGHT:
             // -6 
-                 if(state[index] == player && state[index -6] == player && state[index -12] == player && state[index -18] == player)
+            if(state[index] == player && state[index -6] == player && state[index -12] == player && state[index -18] == player)
             {
                 return 4;
             }
             // check for verticle 3 
             else if((state[index] == player && state[index -6] == player && state[index -12] == player) ||state[index -6] == player && state[index -12] == player && state[index -18] == player )
             {
-                return 3;
+                if(!DiagonalUpRightBlockedIn(state, index, player, 3))
+                {
+                    return 3;
+                }
+                return 0;
             }
             else if((state[index] == player && state[index-6] == player) || (state[index-6] == player && state[index -12] == player) || (state[index -12] == player && state[index-18] == player))
             {
-                return 2;
+                if(!DiagonalUpRightBlockedIn(state, index, player, 2))
+                {
+                    return 2;
+                }
+                return 0;
             }
             else{
                 return 0;
@@ -442,12 +593,20 @@ int ConnectFour:: findNumberPieces(const std::string& state, int index, int pare
             // check for diagonal 3 
             else if((state[index] == player && state[index +8] == player && state[index +16] == player) ||state[index +8] == player && state[index +16] == player && state[index +24] == player )
             {
-                return 3;
+                if(!DiagonalDownLeftBlockedIn(state, index, player, 3))
+                {
+                    return 3;
+                }
+                return 0;
             }
             // check for diagonal pairs
             else if((state[index] == player && state[index+8] == player) || (state[index+8] == player && state[index +16] == player) || (state[index +16] == player && state[index+24] == player))
             {
-                return 2;
+                 if(!DiagonalDownLeftBlockedIn(state, index, player, 2))
+                {
+                    return 2;
+                }
+                return 0;
             }
             else{
                 return 0;
@@ -458,33 +617,40 @@ int ConnectFour:: findNumberPieces(const std::string& state, int index, int pare
     }
 return 0;
 }
+
+//=========================================
 int calculatePieceScore(int friendlyPieces, int enemyPieces)
 {
-    int score = 0; 
-    // prioritize winning or blocking opponent's win
-    if(friendlyPieces == 4)
-    {
-        score += 1000; // ai wins
+  int score = 0;
+
+    // Friendly sequences
+    if (friendlyPieces == 4) {
+        score += 1000; // AI wins
+    } 
+    else if (friendlyPieces == 3) {
+        score += 100 ; // strong sequence, penalized by enemy
+    } 
+    else if (friendlyPieces == 2) {
+        score += 10 ;   // medium sequence
+    } 
+    else if (friendlyPieces == 1) {
+        score += 1;        // single piece slightly valuable
     }
-    else if(friendlyPieces == 3 && enemyPieces == 0)
-    {
-        score += 100; // ai has a strong threat
-    }else if(friendlyPieces == 2 && enemyPieces == 0)
-    {
-        score+= 10;
+
+    // Enemy sequences
+    if (enemyPieces == 4) {
+        score -= 1000; // Human wins
+    } 
+    else if (enemyPieces == 3) {
+        score -= 100; // strong threat, penalized by AI
+    } 
+    else if (enemyPieces == 2) {
+        score -= 10;   // medium threat
+    } 
+    else if (enemyPieces == 1) {
+        score -= 1;        // single threat slightly dangerous
     }
-    
-    if(enemyPieces == 4)
-    {
-        score -= 1000; //human wins
-    }
-    else if(enemyPieces == 3 && friendlyPieces == 0)
-    {
-        score -= 100; // human has strong threat
-    }else if(enemyPieces == 2 && friendlyPieces == 0)
-    {
-        score-= 10;
-    }
+
     return score;
 }
 
@@ -498,6 +664,7 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
     // 3 in a row + 100 points | 3 enemy in a row - 100 points
     // 4 in a row + 1000 points | 4 enemy in a row - 1000 points
     // total score = sum of all sequences on the board
+
     int slidingWindowSize = 4;
 
     // start sliding window in bottom left corner of board
@@ -511,46 +678,38 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
             int tempIndex = index;
             int friendlyCount = 0;
             int enemyCount = 0; 
-            // if(state[index] != '0')
-            // {
+            int enemyPlayer = (playerColor == AI_PLAYER) ? HUMAN_PLAYER : AI_PLAYER;
                 // check horizontal rows
-                //cout << "Checking horizontal 4x4 window rows" << endl;
                 for(int k = 0; k < slidingWindowSize; k++)
                 {
                     friendlyCount = findNumberPieces(state,tempIndex, playerColor, HORIZONTAL); // might need to look into if switching player color with negamax
-                    enemyCount = findNumberPieces(state,tempIndex, -playerColor, HORIZONTAL);
+                    enemyCount = findNumberPieces(state,tempIndex, enemyPlayer, HORIZONTAL);// test instead of enemy player it was -playerColor
                     score += calculatePieceScore(friendlyCount,enemyCount);
                     tempIndex -=7; // moves one row up and searches horizontal again 
                 }
-                //cout << "finished checking horzontal 4x4 window rows" << endl;
 
                 tempIndex = index;
-                  // cout << "starting check on verticle 4x4 window rows" << endl;
                 for(int k = 0; k < slidingWindowSize; k++)
                 {
                 // check Vertical columns
                   friendlyCount = findNumberPieces(state,tempIndex, playerColor, VERTICAL); // look into alternating player piece 
-                  enemyCount = findNumberPieces(state,tempIndex, -playerColor, VERTICAL);
+                  enemyCount = findNumberPieces(state,tempIndex, enemyPlayer, VERTICAL);// test instead of enemy player it was -playerColor
                   score += calculatePieceScore(friendlyCount,enemyCount);
                   tempIndex += 1; // sets index to begin in next column 
                 }
-                  //cout << "finished check on vertical 4x4 window rows" << endl;
-                // check Diagonal right 
-                  //cout << "starting check on diagonal right 4x4 window rows" << endl;
+                 
+                // check Diagonal right // "/ direction"
                 tempIndex = index;
                 friendlyCount = findNumberPieces(state,tempIndex,playerColor,DIAGONAL_RIGHT);
-                enemyCount = findNumberPieces(state,tempIndex,-playerColor,DIAGONAL_RIGHT);
+                enemyCount = findNumberPieces(state,tempIndex,enemyPlayer,DIAGONAL_RIGHT);// test instead of enemy player it was -playerColor
                 score += calculatePieceScore(friendlyCount,enemyCount);
-                 //cout << "finished check on diagonal right 4x4 window rows" << endl;
-                // check diagonal left;
-                //cout << "starting check on diagonal left 4x4 window rows" << endl;
+
+                // check diagonal left; "\ direction"
                 tempIndex -= 21; // sets index to = top left of 4x4 window
                 friendlyCount = findNumberPieces(state,tempIndex, playerColor,DIAGONAL_LEFT);
-                enemyCount = findNumberPieces(state,tempIndex, -playerColor,DIAGONAL_LEFT);
+                enemyCount = findNumberPieces(state,tempIndex, enemyPlayer,DIAGONAL_LEFT);// test instead of enemy player it was -playerColor
                 score += calculatePieceScore(friendlyCount,enemyCount);
                }
-               //cout << "finished check on diagonal left 4x4 window rows" << endl;
-            //}
          }
     return score;
 }
@@ -560,19 +719,15 @@ int ConnectFour::evaluateAiBoard(const std::string& state, int playerColor) {
 // player is the current player's number (AI or human)
 //
 
-int ConnectFour::negamax(std::string& state, int depth, int alpha, int beta, int playerColor) 
+ int ConnectFour::negamax(std::string& state, int depth, int alpha, int beta, int playerColor) 
 {
-    //cout << "about to evaluateAiBoard " <<endl;
-    int score = evaluateAiBoard(state, -playerColor); // was playerColor . . . 
-    //cout << "finished calling evaluateAiBoard " <<endl;
-    cout << "Score = " + to_string(score) <<endl;
-
+    
+    int score = evaluateAiBoard(state, playerColor); 
     // Check if AI wins, human wins, or draw
     if(abs(score) >= 1000) { 
         // A winning state is a loss for the player whose turn it is.
         // The previous player made the winning move.
         return score * playerColor;
-        //return -score; 
     }
 
     if(depth == 4||isAiBoardFull(state)) {
@@ -584,22 +739,18 @@ int ConnectFour::negamax(std::string& state, int depth, int alpha, int beta, int
     int array[] = {3,2,4,1,5,0,6};
     int column;
     for (int x = 0; x < 7; x++) { // only need to look at top row since drop will always fall to lowest piece. 
-          // check for loswest position: 
-        // int y = findLowestEmpty(x);
         int column = array[x];
-
-        // Start from the bottom row and go up
-        int y = findAiLowestEmpty(state,column);
-
-            // Check if cell is empty
+        // check for lowest position: 
+        int y = findAiLowestEmpty(state,column); 
+        //std::cout << "Column " << column << " lowest empty row: " << y << std::endl;
           
         if(y != -1) // skip column if already filled.
         {
-            if (state[y * 7 + column] == '0') { // TO look into: Placing piece at top does not move piece down when doing y *7 +x, need to use logic from action for empty holder. 
+            if (state[y * 7 + column] == '0') { 
                 // Make the move
-                state[y * 7 + column] = playerColor == HUMAN_PLAYER ? '1' : '2'; // Set the cell to the current player's color
-                cout << "testing move at y: " + to_string(y) + " x: " + to_string(column) << endl;
-                int result = -negamax(state, depth + 1, -beta, -alpha, -playerColor);
+                state[y * 7 + column] = (playerColor == HUMAN_PLAYER) ? '1' : '2'; 
+                int result = -negamax(state, depth + 1, -beta, -alpha, -playerColor); 
+                //Logger::GetInstance().LogGameEvent("A move at location : column: " + to_string(column) + " row: " + to_string(y) + "had a score of " + to_string(result));                if(result > bestVal)
                 if(result > bestVal)
                 {
                     bestVal = result;
